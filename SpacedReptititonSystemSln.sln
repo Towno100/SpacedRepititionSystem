@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpacedReptititonSystem", "SpacedReptititonSystem\SpacedReptititonSystem.csproj", "{E79EB437-7CA8-416C-93A1-C716863EFDB2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapitalCities", "SpacedReptititonSystem\CapitalCities.csproj", "{E79EB437-7CA8-416C-93A1-C716863EFDB2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReviewEngine", "ReviewManager\ReviewEngine.csproj", "{644D9D30-8B10-4E66-B1C2-8312C2318A84}"
 EndProject
