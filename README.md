@@ -1,4 +1,4 @@
-# SpacedRepititionSystem
+# Spaced Repitition System
 A Spaced Repitition System Library loosely based on Leitner system 
 
 ## Review Engine
