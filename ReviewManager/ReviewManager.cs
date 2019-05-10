@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace ReviewEngine
 {
-    public class ReviewManager<T>: IReviewManager<T> where T : IReviewable
+    public class ReviewManager<T> : IReviewManager<T> where T : IReviewable
     {
         private readonly int _numberToReturn;
         private readonly int _numberOfNewItemsToStudyBeforeStartingReview;
@@ -15,38 +15,34 @@ namespace ReviewEngine
             _numberOfNewItemsToStudyBeforeStartingReview = numberOfNewItemsToStudyBeforeStartingReview;
         }
 
-        public IEnumerable<T> GetCurrent(IEnumerable<T> reviewItems)
+        public IEnumerable<T> GetCurrent(IQueryable<T> reviewItems)
         {
-            var currentItemsCount = reviewItems.Count(r => r.IsCurrent);
-            SetNewAndReviewItemsToCurrent(reviewItems.Where(r => !r.IsCurrent), _numberToReturn - currentItemsCount);
-            return reviewItems.Where(x => x.IsCurrent);
+            var currentItems = reviewItems.Where(r => r.IsCurrent);
+            var currentItemsCount = currentItems.Count();
+            var addedCurrentItems = SetNewAndReviewItemsToCurrent(reviewItems.Where(r => !r.IsCurrent), _numberToReturn - currentItemsCount);
+            return currentItems.Concat(addedCurrentItems);
         }
 
-        private void SetNewAndReviewItemsToCurrent(IEnumerable<T> reviewItems, int numberToSet)
+        private IEnumerable<T> SetNewAndReviewItemsToCurrent(IQueryable<T> studyItems, int numberToSet)
         {
-            var allStudiedBeforeItems = reviewItems.Where(r => r.Score > 0 && !r.IsCurrent);
+            var allStudiedBeforeItems = studyItems.Where(r => r.Score > 0);
 
-            IEnumerable<T> newItemsToReturn;
-            IEnumerable<T> reviewItemsToReturn;
-            if (allStudiedBeforeItems.Count() > _numberOfNewItemsToStudyBeforeStartingReview)
-            {
-                newItemsToReturn = reviewItems
-                .Where(r => !r.IsCurrent && r.Score == 0)
-                .Take(numberToSet / 2);
+            var numberOfNewItemsToSet = allStudiedBeforeItems.Count() > _numberOfNewItemsToStudyBeforeStartingReview
+                ? numberToSet / 2
+                : numberToSet;
 
-                reviewItemsToReturn = AddStudiedBeforeItems(allStudiedBeforeItems, numberToSet - newItemsToReturn.Count(), allStudiedBeforeItems.Min(x => x.Score));
-            }
-            else
-            {
-                newItemsToReturn = reviewItems
-                .Where(r => !r.IsCurrent && r.Score == 0)
-                .Take(numberToSet);
-                reviewItemsToReturn = new List<T>();
-            }
+            var newItemsToReturn = studyItems
+                .Where(r => r.Score == 0)
+                .Take(numberOfNewItemsToSet)
+                .ToList();
+            newItemsToReturn.ForEach(x => x.Score = 1);
 
-            var itemsToReturn = reviewItemsToReturn.Concat(newItemsToReturn).ToList();
+            // Get count of newItems to cater for once all items have been seen
+            var reviewItemsToReturn = AddStudiedBeforeItems(allStudiedBeforeItems, numberToSet - newItemsToReturn.Count(), allStudiedBeforeItems.Min(x => x.Score));
 
+            var itemsToReturn = newItemsToReturn.Concat(reviewItemsToReturn).ToList();
             itemsToReturn.ForEach(r => r.IsCurrent = true);
+            return itemsToReturn;
         }
 
         private IEnumerable<T> AddStudiedBeforeItems(IEnumerable<T> studiedBeforeItems, int numberRemaining, int score)
@@ -59,7 +55,7 @@ namespace ReviewEngine
             var scoreToGet = score > studiedBeforeItems.Max(x => x.Score)
                 ? 1
                 : score;
-            
+
             var numberToAdd = numberRemaining == 1 ? 1 : numberRemaining / 2;
             var itemsToReview = studiedBeforeItems
                 .Where(sbi => sbi.Score == scoreToGet)
@@ -68,9 +64,8 @@ namespace ReviewEngine
             return itemsToReview.Concat(AddStudiedBeforeItems(studiedBeforeItems.Except(itemsToReview), numberRemaining - itemsToReview.Count(), scoreToGet + 1));
         }
 
-        public int ParseTestResults<R>(IEnumerable<T> studyItems, IEnumerable<R> resultItems, Func<R, T, bool> parseFunction)
+        public int ParseTestResults<R>(IEnumerable<T> testItems, IEnumerable<R> resultItems, Func<R, T, bool> parseFunction)
         {
-            var testItems = studyItems.Where(ti => ti.IsCurrent);
             foreach (var t in testItems)
             {
                 var isCorrect = resultItems.Any(r => parseFunction(r, t));
@@ -81,7 +76,6 @@ namespace ReviewEngine
                 t.LastStudied = isCorrect ? DateTime.UtcNow : t.LastStudied;
             }
             var correctCount = testItems.Count(t => !t.IsCurrent);
-            SetNewAndReviewItemsToCurrent(studyItems.Except(testItems), _numberToReturn - correctCount);
             return correctCount;
         }
     }

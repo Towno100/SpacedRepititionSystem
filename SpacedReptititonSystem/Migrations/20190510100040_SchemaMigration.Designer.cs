@@ -10,8 +10,8 @@ using SpacedReptititonSystem;
 namespace CapitalCities.Migrations
 {
     [DbContext(typeof(CapitalCityDbContext))]
-    [Migration("20190428091639_NewDatabase")]
-    partial class NewDatabase
+    [Migration("20190510100040_SchemaMigration")]
+    partial class SchemaMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
